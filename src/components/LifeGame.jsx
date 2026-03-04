@@ -1,143 +1,157 @@
-import { useState, useEffect, useCallback } from 'react';
-
-// 核心规则：计算下一个状态 (B3/S23)
-const getNextGeneration = (grid, rows, cols) => {
-  const nextGrid = grid.map(arr => [...arr]); // 深拷贝当前网格
-  
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      let neighbors = 0;
-      // 遍历周围 8 个格子
-      for (let i = -1; i <= 1; i++) {
-        for (let j = -1; j <= 1; j++) {
-          if (i === 0 && j === 0) continue;
-          const nr = r + i;
-          const nc = c + j;
-          // 边界检查
-          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-            neighbors += grid[nr][nc];
-          }
-        }
-      }
-      
-      // B3S23 规则判断
-      if (grid[r][c] === 1 && (neighbors < 2 || neighbors > 3)) {
-        nextGrid[r][c] = 0; // 孤独或拥挤而死
-      } else if (grid[r][c] === 0 && neighbors === 3) {
-        nextGrid[r][c] = 1; // 繁殖生出新细胞
-      }
-    }
-  }
-  return nextGrid;
-};
+import { useState } from 'react';
+import confetti from 'canvas-confetti'; // 引入礼炮魔法！
 
 export default function LifeGame() {
-  const [difficulty, setDifficulty] = useState(1); // 1: 简单, 2: 中等, 3: 困难
-  const [gameState, setGameState] = useState('setup'); // setup (选择难度) -> playing (答题中) -> result (结果)
+  const [difficulty, setDifficulty] = useState(1);
+  const [gameState, setGameState] = useState('setup'); // setup | playing | result
+  const [isLoading, setIsLoading] = useState(false);
   
-  const rows = 15;
-  const cols = difficulty * 10; // 难度决定列数
+  const cols = difficulty * 10; 
 
-  // 两个核心状态：初始题目盘面 vs 玩家手填的盘面
   const [initialGrid, setInitialGrid] = useState([]);
   const [playerGrid, setPlayerGrid] = useState([]);
+  const [currentPuzzleId, setCurrentPuzzleId] = useState(null);
+  
+  // 【新增】用来存储结算画面的数据
+  const [resultData, setResultData] = useState({ 
+    isCorrect: false, 
+    score: 0, 
+    actualSolution: null 
+  });
 
-  // 初始化空白网格的辅助函数
-  const createEmptyGrid = useCallback(() => {
-    return Array(rows).fill().map(() => Array(cols).fill(0));
-  }, [rows, cols]);
-
-  // 开始游戏：生成初始题目（这里暂时用随机生成，后续可接入 AI 或题库）
-  const startGame = (level) => {
+  const startGame = async (level) => {
     setDifficulty(level);
-    const newCols = level * 10;
-    
-    // 生成一个随机的初始盘面 (密度设为 20%)
-    const puzzle = Array(rows).fill().map(() => 
-      Array(newCols).fill().map(() => (Math.random() > 0.8 ? 1 : 0))
-    );
-    
-    setInitialGrid(puzzle);
-    setPlayerGrid(Array(rows).fill().map(() => Array(newCols).fill(0))); // 玩家盘面为空
-    setGameState('playing');
+    setIsLoading(true);
+    setResultData({ isCorrect: false, score: 0, actualSolution: null }); // 重置结算状态
+
+    try {
+      const response = await fetch('http://localhost:3000/api/generate-puzzle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ difficulty: level })
+      });
+      const data = await response.json();
+
+      setInitialGrid(data.initialGrid);
+      setCurrentPuzzleId(data.puzzleId);
+      setPlayerGrid(Array(data.rows).fill().map(() => Array(data.cols).fill(0)));
+      setGameState('playing');
+    } catch (error) {
+      alert("连接后端失败，请确保 server 已启动！");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // 玩家点击网格作答
   const toggleCell = (r, c) => {
-    if (gameState !== 'playing') return;
+    if (gameState !== 'playing') return; // 结算后禁止再点击
     const newGrid = playerGrid.map(row => [...row]);
     newGrid[r][c] = newGrid[r][c] ? 0 : 1;
     setPlayerGrid(newGrid);
   };
 
-  // 提交答案，进行验证
-  const handleSubmit = () => {
-    // 1. 连续推演，直到网格不再发生变化（找到稳定态）
-    let current = initialGrid;
-    let next = getNextGeneration(current, rows, cols);
-    let iterations = 0;
-    
-    // 为了防止陷入死循环（比如遇到震荡子），设置最大推演步数
-    while (JSON.stringify(current) !== JSON.stringify(next) && iterations < 50) {
-      current = next;
-      next = getNextGeneration(current, rows, cols);
-      iterations++;
-    }
+  // 【爆改】提交验证逻辑
+  const handleSubmit = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/verify-puzzle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          puzzleId: currentPuzzleId, 
+          playerGrid: playerGrid 
+        })
+      });
+      const data = await response.json();
 
-    // 2. 将最终的稳定态 current 与 玩家填写的 playerGrid 对比
-    const isCorrect = JSON.stringify(current) === JSON.stringify(playerGrid);
-    
-    if (isCorrect) {
-      alert("🎉 挑战成功！你拥有最强大脑！\n实际推演了 " + iterations + " 代达到稳定。");
-    } else {
-      alert("❌ 挑战失败！预测有误。\n(后续我们可以高亮显示填错的格子)");
+      if (data.isCorrect) {
+        // 计算得分：简单5，中等10，困难20
+        const earnedScore = difficulty === 1 ? 5 : difficulty === 2 ? 10 : 20;
+        setResultData({ isCorrect: true, score: earnedScore, actualSolution: data.actualSolution });
+        
+        // 🎉 触发全屏撒花特效！
+        confetti({
+          particleCount: 150,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#3B82F6', '#10B981', '#F59E0B'] // 苹果风配色
+        });
+      } else {
+        // 失败时记录下正确答案，用于 UI 展示
+        setResultData({ isCorrect: false, score: 0, actualSolution: data.actualSolution });
+      }
+      
+      setGameState('result');
+    } catch (error) {
+      alert("验证请求失败！");
     }
-    setGameState('result');
   };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-5xl mx-auto">
+    <div className="flex flex-col items-center w-full max-w-5xl mx-auto animate-fade-in">
       
       {/* 头部控制区 */}
-      <div className="w-full flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">生命游戏 (Game of Life)</h2>
-        
-        {gameState === 'setup' ? (
-          <div className="flex gap-2">
-            <button onClick={() => startGame(1)} className="px-4 py-2 bg-green-500 text-white rounded-lg hover:opacity-80">简单 (区域一)</button>
-            <button onClick={() => startGame(2)} className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:opacity-80">中等 (区域二)</button>
-            <button onClick={() => startGame(3)} className="px-4 py-2 bg-red-500 text-white rounded-lg hover:opacity-80">困难 (区域三)</button>
-          </div>
-        ) : (
-          <div className="flex gap-4">
-            <button onClick={() => setGameState('setup')} className="px-4 py-2 bg-gray-500 text-white rounded-lg">放弃重来</button>
-            {gameState === 'playing' && (
-              <button onClick={handleSubmit} className="px-6 py-2 bg-apple-blue text-white font-bold rounded-lg shadow-lg hover:scale-105 transition-transform">
-                提交预测
-              </button>
+      <div className="w-full flex justify-end items-center mb-6">
+        {gameState === 'setup' && (
+          <div className="flex gap-2 items-center">
+            {isLoading ? (
+              <span className="text-apple-blue font-bold animate-pulse">🧠 正在生成盘面...</span>
+            ) : (
+              <>
+                <button onClick={() => startGame(1)} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:opacity-80 transition">简单 (区域一)</button>
+                <button onClick={() => startGame(2)} className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:opacity-80 transition">中等 (区域二)</button>
+                <button onClick={() => startGame(3)} className="px-4 py-2 bg-blue-800 text-white rounded-lg hover:opacity-80 transition">困难 (区域三)</button>
+              </>
             )}
           </div>
         )}
       </div>
 
+      {/* 【新增】炫酷的结算横幅 */}
+      {gameState === 'result' && (
+        <div className={`w-full p-3 mb-3 rounded-2xl flex items-center justify-between text-white shadow-xl transform transition-all duration-500 scale-100 ${
+          resultData.isCorrect ? 'bg-gradient-to-r from-emerald-500 to-teal-400' : 'bg-gradient-to-r from-red-500 to-rose-400'
+        }`}>
+          <div>
+            <h3 className="text-2xl font-black tracking-wide mb-1">
+              {resultData.isCorrect ? '🎉 挑战成功！' : '❌ 挑战失败！'}
+            </h3>
+            <p className="opacity-90">
+              {resultData.isCorrect ? '你完美推演了最终形态，拥有真正的最强大脑！' : '很遗憾，你的预测与最终稳定态有出入，请看下方对比。'}
+            </p>
+          </div>
+          {resultData.isCorrect && (
+            <div className="text-right">
+              <span className="text-sm font-medium opacity-80">本次获得积分</span>
+              <div className="text-5xl font-black drop-shadow-md">+{resultData.score}</div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* 游戏主体区域 */}
       {gameState !== 'setup' && (
-        <div className="flex flex-col md:flex-row gap-8 w-full">
+        <div className={`flex flex-col gap-8 w-full ${cols === 10 ? 'md:flex-row' : 'xl:flex-row'} items-center justify-center`}>
           
-          {/* 左侧：题目展示区 */}
-          <div className="flex-1 flex flex-col items-center">
-            <h3 className="mb-4 text-gray-500 font-semibold">初始盘面 (考题)</h3>
+          {/* 左侧：题目展示区 / 结算时的正确答案区 */}
+          <div className="flex-1 flex flex-col items-center w-full">
+            <h3 className={`mb-4 font-semibold ${gameState === 'result' && !resultData.isCorrect ? 'text-emerald-500 font-bold' : 'text-gray-500'}`}>
+              {gameState === 'result' && !resultData.isCorrect ? '✅ 标准答案' : '初始盘面 (考题)'}
+            </h3>
             <div 
-              className="grid gap-[1px] bg-apple-blue/20 p-1 border-2 border-apple-blue/50 rounded-lg shadow-2xl"
-              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+              className={`grid gap-[1px] bg-gray-300 dark:bg-gray-600 border rounded shadow-lg w-full mx-auto ${
+                gameState === 'result' && !resultData.isCorrect ? 'border-emerald-500 border-2' : 'border-gray-300 dark:border-gray-600'
+              }`}
+              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, maxWidth: `${cols * 32}px` }}
             >
-              {initialGrid.map((row, r) => 
+              {/* 如果是失败结算，左边展示正确答案；否则展示初始盘面 */}
+              {(gameState === 'result' && !resultData.isCorrect ? resultData.actualSolution : initialGrid).map((row, r) => 
                 row.map((cell, c) => (
                   <div 
-                    key={`init-${r}-${c}`} 
-                    // 这里使用了你要求的颜色：灰色代表死亡，亮黄色代表存活
-                    className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-colors duration-300 ${
-                      cell ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'bg-gray-700/80 dark:bg-gray-800'
+                    key={`left-${r}-${c}`} 
+                    className={`w-full aspect-square transition-colors duration-300 ${
+                      cell 
+                        ? 'bg-yellow-400 relative z-10 shadow-[0_0_4px_rgba(250,204,21,0.5)]' 
+                        : 'bg-[#64748b] dark:bg-[#334155]'
                     }`}
                   />
                 ))
@@ -146,29 +160,53 @@ export default function LifeGame() {
           </div>
 
           {/* 右侧：玩家作答区 */}
-          <div className="flex-1 flex flex-col items-center">
-            <h3 className="mb-4 font-bold text-apple-blue">你的预测 (点击网格作答)</h3>
+          <div className="flex-1 flex flex-col items-center w-full">
+            <h3 className={`mb-4 font-bold ${gameState === 'result' && !resultData.isCorrect ? 'text-red-500' : 'text-apple-blue'}`}>
+              你的预测 {gameState === 'result' && !resultData.isCorrect && '(红框为错误点)'}
+            </h3>
             <div 
-              className="grid gap-[1px] bg-apple-blue/20 p-1 border-2 border-apple-blue/50 rounded-lg shadow-2xl cursor-pointer"
-              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+              className={`grid gap-[1px] bg-gray-300 dark:bg-gray-600 border rounded shadow-lg w-full mx-auto ${
+                gameState === 'playing' ? 'cursor-pointer' : 'cursor-default'
+              } ${gameState === 'result' && !resultData.isCorrect ? 'border-red-500 border-2' : 'border-gray-300 dark:border-gray-600'}`}
+              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`, maxWidth: `${cols * 32}px` }}
             >
               {playerGrid.map((row, r) => 
-                row.map((cell, c) => (
-                  <div 
-                    key={`player-${r}-${c}`} 
-                    onClick={() => toggleCell(r, c)}
-                    className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-colors duration-150 border border-white/5 hover:border-white/30 ${
-                      cell ? 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]' : 'bg-gray-700/80 dark:bg-gray-800'
-                    }`}
-                  />
-                ))
+                row.map((cell, c) => {
+                  // 【高光时刻】结算失败时，找出玩家填错的格子并标红框
+                  const isWrong = gameState === 'result' && !resultData.isCorrect && cell !== resultData.actualSolution[r][c];
+                  
+                  return (
+                    <div 
+                      key={`player-${r}-${c}`} 
+                      onClick={() => toggleCell(r, c)}
+                      className={`w-full aspect-square transition-all duration-150 ${
+                        gameState === 'playing' ? 'hover:brightness-110' : ''
+                      } ${
+                        cell 
+                          ? 'bg-yellow-400 relative shadow-[0_0_4px_rgba(250,204,21,0.5)]' 
+                          : 'bg-[#64748b] dark:bg-[#334155]'
+                      } ${
+                        isWrong ? 'border-2 border-red-500 animate-pulse z-20' : 'z-10'
+                      }`}
+                    />
+                  );
+                })
               )}
             </div>
           </div>
 
         </div>
       )}
-      
+
+      {/* 提交预测按钮：单独拆到页面底部，居右对齐 */}
+      {gameState === 'playing' && (
+        <div className="w-full flex justify-end border-t border-gray-200 dark:border-gray-800">
+            <button onClick={handleSubmit} className="px-6 py-2 bg-apple-blue text-white font-bold rounded-lg shadow-lg hover:scale-105 transition-transform">
+            提交预测
+            </button>
+        </div>
+       )}
+
       {/* 规则说明 (仅在未开始时显示) */}
       {gameState === 'setup' && (
         <div className="mt-12 p-6 apple-glass rounded-2xl max-w-2xl text-sm leading-relaxed text-gray-600 dark:text-gray-300">

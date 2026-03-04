@@ -23,17 +23,20 @@ export default function Game() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-6 font-sans pb-12">
-      {/* 顶部返回按钮 */}
-      <div className="mb-6 pt-4">
-        <button 
-          onClick={() => navigate(-1)} // 返回上一页 (也就是退回 GameStore)
-          className="flex items-center gap-2 text-gray-500 hover:text-apple-lightText dark:hover:text-apple-darkText transition-colors font-medium"
-        >
-          <span>←</span> 退出游戏，返回仓库
-        </button>
-      </div>
-
+    <div className="max-w-7xl mx-auto px-6 font-sans pb-4">
+      {/* 顶部信息 */}
+        <div className="flex items-center pt-4 mb-2">
+            {/* 返回按钮 - 去掉原有的 mb-6，保留 pt-4 到外层 flex 容器 */}
+            <button 
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition"
+            >
+            <span>←</span> 返回仓库
+            </button>
+            
+            {/* 游戏标题 - 和按钮同行 */}
+            <h2 className="flex-1 text-center text-2xl font-bold">生命游戏 (Game of Life)</h2>
+        </div>
       {/* 渲染具体游戏画面 */}
       {renderGame()}
     </div>
