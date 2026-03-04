@@ -13,7 +13,7 @@ export default function Login() {
   };
 
   return(
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-apple-lightBg dark:bg-apple-darkBg transition-colors duration-500">
+    <div className="relative min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden transition-colors duration-500">
       
       {/* --- 动态多彩圆球背景 --- */}
       <div className="absolute w-full h-full max-w-3xl flex justify-center items-center pointer-events-none">

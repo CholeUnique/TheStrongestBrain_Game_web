@@ -1,23 +1,17 @@
-import { useNavigate } from 'react-router-dom';
+import {useNavigate } from 'react-router-dom';
 
-export default function Home() {
+export default function GameStore() {
   const navigate = useNavigate();
-
-  // 退出登录逻辑
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    navigate('/login');
-  };
 
   // 模拟《最强大脑》的游戏仓库数据
   const gameStore = [
     {
-      id: 'memory-matrix',
-      title: '繁花矩阵 (Memory Matrix)',
-      description: '在 10x10 的动态色块中，记忆并在干扰后复原目标色块的精确位置。',
-      difficulty: '⭐⭐⭐⭐',
-      color: 'bg-blue-500',
-      tags: ['瞬时记忆', '抗干扰']
+      id: 'life-game',
+      title: '生命游戏 (Life Game)',
+      description: '基于 B3/S23 细胞自动机规则，在大脑中推演动态盘面，找出最终的稳定形态。',
+      difficulty: '⭐⭐⭐⭐⭐',
+      color: 'bg-yellow-500',
+      tags: ['空间推演', '规则计算']
     },
     {
       id: 'spatial-fold',
@@ -45,22 +39,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-apple-lightBg dark:bg-apple-darkBg transition-colors duration-500 p-6 md:p-12 font-sans">
-      
-      {/* --- 顶部导航栏 --- */}
-      <header className="flex justify-between items-center mb-12 max-w-6xl mx-auto">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold text-apple-lightText dark:text-apple-darkText tracking-tight">
-            训练营
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">欢迎回来，最强大脑挑战者。</p>
-        </div>
-        <button 
-          onClick={handleLogout}
-          className="px-4 py-2 rounded-full bg-gray-200 dark:bg-gray-800 text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors"
-        >
-          退出登录
-        </button>
-      </header>
 
       {/* --- 游戏仓库 (App Store 风格网格) --- */}
       <main className="max-w-6xl mx-auto">
