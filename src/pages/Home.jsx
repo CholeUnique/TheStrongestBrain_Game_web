@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactECharts from 'echarts-for-react';
+import BadgePavilion from '../components/BadgePavilion';
 
 export default function Home() {
   const [userInfo, setUserInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
   const navigate = useNavigate(); 
 
   // 编辑表单的数据状态
@@ -161,7 +163,7 @@ export default function Home() {
 
   return (
     // 最外层容器，限制宽度并居中
-    <div className="max-w-8xl max-h-screen mx-auto my-0 font-sans animate-fade-in">
+    <div className="max-w-8xl h-full max-h-screen mx-auto my-0 font-sans animate-fade-in">
       
       {/* 整个个人主页的卡片容器 */}
       <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl shadow-sm border border-gray-200 dark:border-white/5 overflow-hidden">
@@ -184,7 +186,7 @@ export default function Home() {
           </div>
 
           {/* 右侧徽章 */}
-          <div className="absolute top-0 md:top-14 right-8 flex gap-3">
+          <div onClick={() => setIsBadgeModalOpen(true)} className="absolute top-0 md:top-14 right-8 flex gap-3" title="点击进入荣誉展馆">
             {userInfo.badges.map((badge, index) => (
               <div key={index} className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-100 dark:border-gray-700 flex items-center justify-center text-xl hover:scale-110 transition-transform cursor-help">
                 {badge}
@@ -251,7 +253,7 @@ export default function Home() {
             <div className="bg-gray-50 dark:bg-[#242426] rounded-3xl p-4 h-40 border border-gray-100 dark:border-transparent flex items-center justify-between px-8">
               <div className="w-1/2">
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">本周累计耗时</p>
-                <p className="text-2xl font-bold">{userInfo.stats.week_time_minutes}<span className="text-[10px] font-normal text-gray-500">分</span></p>
+                <p className="text-2xl font-bold">{userInfo.stats.week_time_minutes}<span className="text-[10px] font-normal text-gray-500">分钟</span></p>
                 {/* 动态计算上升或下降的箭头和颜色 */}
                 <p className={`text-[10px] font-medium mt-0.5 ${userInfo.stats.week_trend === 0 ? 'text-gray-500' : (userInfo.stats.week_trend >= 0 ? 'text-emerald-500' : 'text-rose-500')}`}>
                   {userInfo.stats.week_trend === 0 ? '--' : (userInfo.stats.week_trend >= 0 ? '↑' : '↓')} 比上周 {Math.abs(userInfo.stats.week_trend)}%
@@ -397,6 +399,14 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* 极简引入徽章展馆组件 */}
+      <BadgePavilion 
+        isOpen={isBadgeModalOpen} 
+        onClose={() => setIsBadgeModalOpen(false)} 
+        onSaveSuccess={() => window.location.reload()} // 保存成功直接刷新 Home
+      />
+
     </div>
   );
 }

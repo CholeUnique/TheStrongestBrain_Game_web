@@ -94,7 +94,7 @@ export default function Login() {
       </div>
 
       {/* --- 3D 翻转容器 --- */}
-      <div className="perspective-1000 relative w-80 h-[32rem] md:top-8 z-10">
+      <div className="perspective-1000 relative w-80 h-[32rem] md:top-1 z-10">
         <div className={`w-full h-full duration-700 preserve-3d relative ${isFlipped ? 'rotate-y-180' : ''}`}>
           
           {/* =========================================

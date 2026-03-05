@@ -1,5 +1,6 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import LifeGame from '../components/LifeGame'; // 引入你的生命游戏组件
+import PreciseWord from '../components/PreciseWord'; // 引入你的精准造字游戏组件
 
 export default function Game() {
   const [searchParams] = useSearchParams();
@@ -13,8 +14,8 @@ export default function Game() {
     switch (gameId) {
       case 'life-game':
         return <LifeGame />;
-      case 'spatial-fold':
-        return <div className="text-center py-20 text-gray-500">空间折叠开发中...</div>;
+      case 'precise-word':
+        return <PreciseWord />;
       case 'logic-maze':
         return <div className="text-center py-20 text-gray-500">盲眼迷宫开发中...</div>;
       default:
@@ -35,7 +36,7 @@ export default function Game() {
             </button>
             
             {/* 游戏标题 - 和按钮同行 */}
-            <h2 className="flex-1 text-center text-2xl font-bold">生命游戏 (Game of Life)</h2>
+            {/* <h2 className="flex-1 text-center text-2xl font-bold">{gameStore.find(game => game.id === gameId)?.title || '游戏标题'}</h2> */}
         </div>
       {/* 渲染具体游戏画面 */}
       {renderGame()}

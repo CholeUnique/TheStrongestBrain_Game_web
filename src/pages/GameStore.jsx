@@ -14,12 +14,12 @@ export default function GameStore() {
       tags: ['空间推演', '规则计算']
     },
     {
-      id: 'spatial-fold',
-      title: '空间折叠 (Spatial Fold)',
-      description: '在大脑中将展开的 2D 复杂多边形折叠成 3D 几何体，并判断其投影。',
+      id: 'precise-word',
+      title: '精准造字 (Precise Word)',
+      description: '在 6×6 字根矩阵中规划连线路径，配合冷却流转的部首池，在脑海中完成汉字的解构与重构。',
       difficulty: '⭐⭐⭐⭐⭐',
-      color: 'bg-purple-500',
-      tags: ['空间推理', 'AI 生成']
+      color: 'bg-emerald-500',
+      tags: ['汉字储备', '路径规划', '瞬时记忆']
     },
     {
       id: 'logic-maze',

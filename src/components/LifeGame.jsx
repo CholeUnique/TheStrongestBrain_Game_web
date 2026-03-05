@@ -29,7 +29,7 @@ export default function LifeGame() {
     const token = localStorage.getItem('token');
 
     try {
-      const response = await fetch('http://localhost:3000/api/generate-puzzle', {
+      const response = await fetch('http://localhost:3000/api/life-game/generate', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -63,7 +63,7 @@ export default function LifeGame() {
     // 计算耗时 (当前时间减去开局时间，除以1000变成秒)
     const timeSpent = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
     try {
-      const response = await fetch('http://localhost:3000/api/verify-puzzle', {
+      const response = await fetch('http://localhost:3000/api/life-game/verify', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -77,13 +77,21 @@ export default function LifeGame() {
           timeSpent: timeSpent  // 【关键】把真实耗时发给后端！
         })
       });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({})); // 防止后端连 JSON 都没返回
+        throw new Error(errData.error || `后端接口异常，状态码: ${response.status}`);
+      }
       const data = await response.json();
 
-      if (data.isCorrect) {
-        // 计算得分：简单5，中等10，困难20
-        const earnedScore = difficulty === 1 ? 5 : difficulty === 2 ? 10 : 20;
-        setResultData({ isCorrect: true, score: earnedScore, actualSolution: data.actualSolution });
-        
+      // 【防御机制 2】只有成功拿到所有数据，才将数据写入状态
+      setResultData({ 
+        isCorrect: data.isCorrect, 
+        score: data.scoreEarned, 
+        actualSolution: data.actualSolution 
+      });
+
+      if (data.isCorrect) {        
         // 🎉 触发全屏撒花特效！
         confetti({
           particleCount: 150,
@@ -91,14 +99,12 @@ export default function LifeGame() {
           origin: { y: 0.6 },
           colors: ['#3B82F6', '#10B981', '#F59E0B'] // 苹果风配色
         });
-      } else {
-        // 失败时记录下正确答案，用于 UI 展示
-        setResultData({ isCorrect: false, score: 0, actualSolution: data.actualSolution });
-      }
-      
+      } 
+    
       setGameState('result');
     } catch (error) {
-      alert("验证请求失败！");
+      console.error("提交验证失败:", error);
+      alert(`提交失败: ${error.message}\n请检查后端控制台是否有报错！`);
     }
   };
 

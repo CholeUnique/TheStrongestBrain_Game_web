@@ -17,13 +17,13 @@ function App() {
   return (
     <BrowserRouter>
       {/* 最外层容器负责全局背景色和文字颜色 */}
-      <div className="min-h-screen bg-apple-lightBg dark:bg-apple-darkBg text-apple-lightText dark:text-apple-darkText transition-colors duration-500">
+      <div className="h-screen w-screen overflow-hidden flex flex-col bg-apple-lightBg dark:bg-apple-darkBg text-apple-lightText dark:text-apple-darkText transition-colors duration-500">
         
         {/* Navbar 现在是真·全局组件 */}
         <Navbar />
 
         {/*  统一为导航栏留出空间，防止内容被压住 */}
-        <div className="pt-14 mt-0">
+        <div className="pt-14 flex-1 overflow-hidden w-full">
           <Routes>
             {/* 所有人都能访问的登录页 */}
             <Route path="/login" element={<Login />} />
