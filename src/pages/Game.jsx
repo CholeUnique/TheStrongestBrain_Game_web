@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import LifeGame from '../components/LifeGame'; // 引入你的生命游戏组件
 import PreciseWord from '../components/PreciseWord'; // 引入你的精准造字游戏组件
+import ArrowMaze from '../components/ArrowMaze'; // 引入你的箭阵迷域游戏组件
 import { useToast } from '../context/ToastContext';
 
 export default function Game() {
@@ -18,8 +19,8 @@ export default function Game() {
         return <LifeGame  />;
       case 'precise-word':
         return <PreciseWord />;
-      case 'logic-maze':
-        return <div className="text-center py-20 text-gray-500">盲眼迷宫开发中...</div>;
+      case 'arrow-maze':
+        return <ArrowMaze />;
       default:
         return <div className="text-center py-20 text-red-500">找不到该游戏模块！</div>;
     }

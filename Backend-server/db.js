@@ -115,6 +115,14 @@ db.serialize(() => {
         });
     });
 
+    //《箭阵迷域》游戏表
+    db.run(`CREATE TABLE IF NOT EXISTS arrow_puzzles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        size INTEGER DEFAULT 8,        -- 盘面尺寸，如 8 代表 8x8
+        nodes_data TEXT,               -- 存储所有旋钮的 JSON：[{id, x, y, dirs:['N','E']}]
+        correct_start TEXT             -- 预设的唯一正确起点坐标，如 "E6"
+    )`);
+
 
 });
 

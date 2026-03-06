@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useToast } from '../context/ToastContext';
+import {useNavigate } from 'react-router-dom';
 
 export default function PreciseWordGame() {
   const [gameState, setGameState] = useState('setup'); // setup, playing, result
@@ -9,6 +10,7 @@ export default function PreciseWordGame() {
   const [coolingRadicals, setCoolingRadicals] = useState([]); // 正在冷却的部首（下一轮恢复）
   const [justUsedRadicals, setJustUsedRadicals] = useState([]); // 刚刚用掉的（下轮将禁用）
   const { showMsg } = useToast();
+  const navigate = useNavigate();
 
   // 游戏核心数据
   const [grid, setGrid] = useState([]); // 36 个字根
@@ -86,6 +88,8 @@ export default function PreciseWordGame() {
       setPathCells([]);
       setSelectedRadicals([]);
       setDisabledRadicals([]);
+      setLastEndIndex(null); // 重置上一回合末尾格子索引
+
     }
   };
 
@@ -258,7 +262,7 @@ export default function PreciseWordGame() {
         </div>
         <h2 className="text-3xl font-bold mb-4">{resultData.message}</h2>
         {resultData.isCorrect && <p className="text-xl text-apple-blue font-bold mb-8">获得积分: +{resultData.score}</p>}
-        <button onClick={() => setGameState('setup')} className="px-8 py-3 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-300 transition-colors">
+        <button onClick={() => navigate('/GameStore')} className="px-8 py-3 rounded-xl bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-300 transition-colors">
           返回选关
         </button>
       </div>
