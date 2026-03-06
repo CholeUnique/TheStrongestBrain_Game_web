@@ -4,6 +4,10 @@ export default function PreciseWordGame() {
   const [gameState, setGameState] = useState('setup'); // setup, playing, result
   const [isLoading, setIsLoading] = useState(false);
   const [resultData, setResultData] = useState({ isCorrect: false, score: 0, message: '' });
+  const [lastEndIndex, setLastEndIndex] = useState(null); // 上一回合的末尾格子索引
+  const [coolingRadicals, setCoolingRadicals] = useState([]); // 正在冷却的部首（下一轮恢复）
+  const [justUsedRadicals, setJustUsedRadicals] = useState([]); // 刚刚用掉的（下轮将禁用）
+
 
   // 游戏核心数据
   const [grid, setGrid] = useState([]); // 36 个字根
@@ -106,46 +110,39 @@ export default function PreciseWordGame() {
   const handleGridClick = (index) => {
     if (litCells.includes(index)) return; // 已经点亮的不能再选
 
-    // 如果还没选，或者已经选满了 4 个，重新作为起点
-    if (pathCells.length === 0 || pathCells.length === 4) {
-      setPathCells([index]);
+    // 情况 A：选择本回合的第一个格子
+    if (pathCells.length === 0) {
+      if (lastEndIndex === null) {
+        // 游戏第一次启动，允许自由选择起始点
+        setPathCells([index]);
+      } else {
+        // 必须从上一回合末尾格子的四周选择
+        const r_last = Math.floor(lastEndIndex / 6), c_last = lastEndIndex % 6;
+        const r_curr = Math.floor(index / 6), c_curr = index % 6;
+        const dist = Math.abs(r_last - r_curr) + Math.abs(c_last - c_curr);
+
+        if (dist === 1) {
+          setPathCells([index]);
+        } else {
+          alert("非首轮起始格子必须选择在上一轮末尾格子的上下左右！");
+        }
+      }
       return;
     }
 
-    // 如果选了起点，验证第二个点击的格子是否合法（必须是直线距离为 3）
-    if (pathCells.length === 1) {
-      const startIdx = pathCells[0];
-      const endIdx = index;
-      const sr = Math.floor(startIdx / 6), sc = startIdx % 6;
-      const er = Math.floor(endIdx / 6), ec = endIdx % 6;
+    // 情况 B：选择回合内的第 2, 3, 4 个格子（路径连线）
+    if (pathCells.length < 4) {
+      if (pathCells.includes(index)) return; // 不能重复选
+
+      const lastIdx = pathCells[pathCells.length - 1];
+      const r1 = Math.floor(lastIdx / 6), c1 = lastIdx % 6;
+      const r2 = Math.floor(index / 6), c2 = index % 6;
       
-      const dr = Math.abs(er - sr);
-      const dc = Math.abs(ec - sc);
-
-      // 判断是否在一条直线上，且距离刚好跨越 4 个格子 (即坐标差为 0 或 3)
-     if (Math.max(dr, dc) === 3 && (dr === 0 || dc === 0 || dr === dc)) {
-      // 使用 Math.sign 确定方向 (-1, 0, 1)
-      const dirR = Math.sign(er - sr);
-      const dirC = Math.sign(ec - sc);
-
-      const newPath = [
-        startIdx,
-        (sr + dirR) * 6 + (sc + dirC),
-        (sr + dirR * 2) * 6 + (sc + dirC * 2),
-        endIdx
-      ];
-
-        // 检查路径上有没有已经被点亮的格子，如果有则不能连线
-        const hasConflict = newPath.some(idx => litCells.includes(idx));
-        if (hasConflict) {
-          alert('路径被已点亮的文字阻挡！');
-          setPathCells([index]);
-        } else {
-          setPathCells(newPath);
-        }
+      // 严格相邻判定（上下左右，不含斜向）
+      if (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) {
+        setPathCells([...pathCells, index]);
       } else {
-        // 不合法则重新设为起点
-        setPathCells([index]);
+        alert("请选择相邻的格子（不可斜选）！");
       }
     }
   };
@@ -155,18 +152,15 @@ export default function PreciseWordGame() {
   // ==========================================
 
   const handleVerifyCombo = () => {
-    if (selectedRadicals.length !== 4 || pathCells.length !== 4) {
-      alert('必须选择 4 个部首和 4 个连续的格子！');
+      if (selectedRadicals.length !== 4 || pathCells.length !== 4) {
+      alert("请选满4个部首和4个相邻文字！");
       return;
     }
 
-    // 校验组合: 严格按照顺序 1对1 组合
+    // 一一对应校验
     let allValid = true;
     for (let i = 0; i < 4; i++) {
-      const radical = selectedRadicals[i];
-      const component = grid[pathCells[i]];
-      const comboKey = `${radical}+${component}`;
-      
+      const comboKey = `${selectedRadicals[i]}+${grid[pathCells[i]]}`;
       if (!validCombinations[comboKey]) {
         allValid = false;
         break;
@@ -174,24 +168,24 @@ export default function PreciseWordGame() {
     }
 
     if (allValid) {
-      // 成功点亮
       const newLitCells = [...litCells, ...pathCells];
       setLitCells(newLitCells);
       
-      // 更新禁用逻辑：本回合用过的部首，下回合禁用（去重）
-      setDisabledRadicals([...new Set(selectedRadicals)]);
-      
-      // 清空当前选择
+      // 记录本轮结束位置，作为下轮起点
+      setLastEndIndex(pathCells[3]);
+
+      // 部首冷却逻辑流转：
+      // 1. 本轮使用的部首进入冷却名单
+      // 2. 上一轮冷却的部首在本轮结束后恢复（清空旧冷却，设置新冷却）
+      setDisabledRadicals([...new Set(selectedRadicals)]); // 下一轮禁用
+      setCoolingRadicals([]); // 之前的冷却清空（如果需要更细致的恢复逻辑可以调整）
+
       setPathCells([]);
       setSelectedRadicals([]);
-
-      // 判断是否赢了 (36 个格子全亮)
-      if (newLitCells.length === 36) {
-        submitGameResult(false); // 不是投降，是胜利
-      }
+      
+      if (newLitCells.length === 36) submitGameResult(false);
     } else {
-      alert('字形重构失败，请检查你的组合！');
-      // 失败不清空状态，让玩家自己调
+      alert("重构失败，汉字不存在！");
     }
   };
 
