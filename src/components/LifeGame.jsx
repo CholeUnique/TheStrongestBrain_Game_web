@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import confetti from 'canvas-confetti'; // 引入礼炮魔法！
-
+import { useToast } from '../context/ToastContext';
 
 export default function LifeGame() {
   const [difficulty, setDifficulty] = useState(1);
   const [gameState, setGameState] = useState('setup'); // setup | playing | result
   const [isLoading, setIsLoading] = useState(false);
   const [startTime, setStartTime] = useState(null);//记录时间
-
+  const { showMsg } = useToast();
+  
   const cols = difficulty * 10; 
 
   const [initialGrid, setInitialGrid] = useState([]);
@@ -44,7 +45,7 @@ export default function LifeGame() {
       setPlayerGrid(Array(data.rows).fill().map(() => Array(data.cols).fill(0)));
       setGameState('playing');
     } catch (error) {
-      alert("连接后端失败，请确保 server 已启动！");
+      showMsg("连接后端失败，请确保 server 已启动！", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +105,7 @@ export default function LifeGame() {
       setGameState('result');
     } catch (error) {
       console.error("提交验证失败:", error);
-      alert(`提交失败: ${error.message}\n请检查后端控制台是否有报错！`);
+      showMsg(`提交失败: ${error.message}\n请检查后端控制台是否有报错！`, 'error');
     }
   };
 

@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { useState, useCallback } from 'react';
 import Game from './pages/Game';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import GameStore from './pages/GameStore';
 import Navbar from './components/Navbar';
+import { ToastProvider } from './context/ToastContext';
 import './index.css'
 
 // 路由守卫组件
@@ -15,30 +17,33 @@ const ProtectedRoute = () => {
 
 function App() {
   return (
-    <BrowserRouter>
-      {/* 最外层容器负责全局背景色和文字颜色 */}
-      <div className="h-screen w-screen overflow-hidden flex flex-col bg-apple-lightBg dark:bg-apple-darkBg text-apple-lightText dark:text-apple-darkText transition-colors duration-500">
-        
-        {/* Navbar 现在是真·全局组件 */}
-        <Navbar />
+    <ToastProvider>
+      <BrowserRouter>
+        {/* 最外层容器负责全局背景色和文字颜色 */}
+        <div className="h-screen w-screen overflow-hidden flex flex-col bg-apple-lightBg dark:bg-apple-darkBg text-apple-lightText dark:text-apple-darkText transition-colors duration-500">
+          
+          {/* Navbar 现在是真·全局组件 */}
+          <Navbar />
 
-        {/*  统一为导航栏留出空间，防止内容被压住 */}
-        <div className="pt-14 flex-1 overflow-hidden w-full">
-          <Routes>
-            {/* 所有人都能访问的登录页 */}
-            <Route path="/login" element={<Login />} />
-            
-            {/* 登录后才能访问的页面 */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/gamestore" element={<GameStore />} />
-              <Route path="/game" element={<Game />} />
-            </Route>
-          </Routes>
+          {/*  统一为导航栏留出空间，防止内容被压住 */}
+          <div className="pt-14 flex-1 overflow-hidden w-full">
+            <Routes>
+              {/* 所有人都能访问的登录页 */}
+              <Route path="/login" element={<Login />} />
+              
+              {/* 登录后才能访问的页面 */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/gamestore" element={<GameStore />} />
+                <Route path="/game" element={<Game />} />
+              </Route>
+            </Routes>
+          </div>
+
+
         </div>
-
-      </div>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ToastProvider>
   )
 }
 

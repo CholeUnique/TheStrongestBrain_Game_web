@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useToast } from '../context/ToastContext';
 
 export default function PreciseWordGame() {
   const [gameState, setGameState] = useState('setup'); // setup, playing, result
@@ -7,7 +8,7 @@ export default function PreciseWordGame() {
   const [lastEndIndex, setLastEndIndex] = useState(null); // 上一回合的末尾格子索引
   const [coolingRadicals, setCoolingRadicals] = useState([]); // 正在冷却的部首（下一轮恢复）
   const [justUsedRadicals, setJustUsedRadicals] = useState([]); // 刚刚用掉的（下轮将禁用）
-
+  const { showMsg } = useToast();
 
   // 游戏核心数据
   const [grid, setGrid] = useState([]); // 36 个字根
@@ -71,7 +72,7 @@ export default function PreciseWordGame() {
       setStartTime(Date.now());
       setGameState('playing');
     } catch (error) {
-      alert(error.message);
+      showMsg(error.message, 'error');
       setGameState('setup');
     } finally {
       setIsLoading(false);
@@ -124,7 +125,7 @@ export default function PreciseWordGame() {
         if (dist === 1) {
           setPathCells([index]);
         } else {
-          alert("非首轮起始格子必须选择在上一轮末尾格子的上下左右！");
+          showMsg("非首轮起始格子必须选择在上一轮末尾格子的上下左右！", 'warning');
         }
       }
       return;
@@ -142,7 +143,7 @@ export default function PreciseWordGame() {
       if (Math.abs(r1 - r2) + Math.abs(c1 - c2) === 1) {
         setPathCells([...pathCells, index]);
       } else {
-        alert("请选择相邻的格子（不可斜选）！");
+        showMsg("请选择相邻的格子（不可斜选）！", 'warning');
       }
     }
   };
@@ -153,7 +154,7 @@ export default function PreciseWordGame() {
 
   const handleVerifyCombo = () => {
       if (selectedRadicals.length !== 4 || pathCells.length !== 4) {
-      alert("请选满4个部首和4个相邻文字！");
+      showMsg("请选满4个部首和4个相邻文字！", 'warning');
       return;
     }
 
@@ -185,7 +186,7 @@ export default function PreciseWordGame() {
       
       if (newLitCells.length === 36) submitGameResult(false);
     } else {
-      alert("重构失败，汉字不存在！");
+      showMsg("重构失败，汉字不存在！", 'error');
     }
   };
 
@@ -218,7 +219,7 @@ export default function PreciseWordGame() {
       }
       setGameState('result');
     } catch (error) {
-      alert("网络错误，提交失败");
+      showMsg("网络错误，提交失败！", 'error');
     }
   };
 

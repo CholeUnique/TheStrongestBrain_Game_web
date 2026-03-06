@@ -1,10 +1,12 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import LifeGame from '../components/LifeGame'; // 引入你的生命游戏组件
 import PreciseWord from '../components/PreciseWord'; // 引入你的精准造字游戏组件
+import { useToast } from '../context/ToastContext';
 
 export default function Game() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { showMsg } = useToast();
   
   // 从网址中抓取游戏 id (比如点击后网址变成 /game?id=life-game，这里就是 'life-game')
   const gameId = searchParams.get('id');
@@ -13,7 +15,7 @@ export default function Game() {
   const renderGame = () => {
     switch (gameId) {
       case 'life-game':
-        return <LifeGame />;
+        return <LifeGame  />;
       case 'precise-word':
         return <PreciseWord />;
       case 'logic-maze':

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useToast } from '../context/ToastContext';
 
 export default function BadgePavilion({ isOpen, onClose, onSaveSuccess }) {
   const [badgeData, setBadgeData] = useState({ all: [], unlocked: [], equipped: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { showMsg } = useToast();
 
   // 只有当弹窗打开时，才去后端拉取数据
   useEffect(() => {
@@ -39,13 +41,13 @@ export default function BadgePavilion({ isOpen, onClose, onSaveSuccess }) {
       if (newEquipped.length > 1) {
         newEquipped = newEquipped.filter(b => b !== icon);
       } else {
-        alert("至少需要展示 1 个荣誉徽章哦！");
+        showMsg("至少需要展示 1 个荣誉徽章哦！", 'info');
       }
     } else {
       if (newEquipped.length < 3) {
         newEquipped.push(icon);
       } else {
-        alert("主页最多只能展示 3 个徽章，请先卸下一些。");
+        showMsg("主页最多只能展示 3 个徽章，请先卸下一些。","warning");
       }
     }
     setBadgeData({ ...badgeData, equipped: newEquipped });
@@ -68,7 +70,7 @@ export default function BadgePavilion({ isOpen, onClose, onSaveSuccess }) {
         onClose();       // 自己把弹窗关掉
       }
     } catch (error) {
-      alert("保存失败！");
+      showMsg("保存失败！", 'error');
     } finally {
       setIsSaving(false);
     }

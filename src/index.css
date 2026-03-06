@@ -41,3 +41,38 @@
 }
 .animation-delay-2000 { animation-delay: 2s; }
 .animation-delay-4000 { animation-delay: 4s; }
+
+/* 现代苹果风格通知动画 */
+@keyframes apple-drop-in {
+  0% {
+    transform: translateY(-20px) scale(0.9);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+@keyframes apple-out {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+.animate-apple-in {
+  animation: apple-drop-in 0.5s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+}
+
+.animate-apple-out {
+  /* 增加高度塌陷动画，让下面的通知自动顶上来 */
+  animation: apple-out 0.3s ease forwards;
+}

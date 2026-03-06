@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import RainbowParticleBg from '../components/RainbowParticleBg'; // 【新增BG导入】
+import { useToast } from '../context/ToastContext';
 
 export default function Login() {
   const [isFlipped,setIsFlipped] = useState(false);
@@ -15,6 +16,7 @@ export default function Login() {
 
   const [errorMsg, setErrorMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { showMsg } = useToast();
 
   //登录
   const handleLogin = async (e) => {
@@ -63,7 +65,7 @@ export default function Login() {
       localStorage.setItem('token', data.token);
       localStorage.setItem('isAuthenticated', 'true');
       
-      alert(`🎉 注册成功！\n请务必牢记你的系统专属 ID：【 ${data.systemId} 】\n它是你以后登录的唯一凭证！`);
+      showMsg(`🎉 注册成功！\n请务必牢记你的系统专属 ID：【 ${data.systemId} 】\n它是你以后登录的唯一凭证！`, 'success');
       navigate('/');
     } catch (err) {
       setErrorMsg(err.message);
@@ -80,7 +82,7 @@ export default function Login() {
 
   // 第三方登录占位提示
   const handleThirdPartyLogin = (method) => {
-    alert(`🚧 【${method}登录】企业级 API 接口正在接入中，敬请期待！`);
+    showMsg(`【${method}登录】企业级 API 接口正在接入中，敬请期待！`, 'info');
   };
 
   return(

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ReactECharts from 'echarts-for-react';
 import BadgePavilion from '../components/BadgePavilion';
+import { useToast } from '../context/ToastContext';
 
 export default function Home() {
   const [userInfo, setUserInfo] = useState(null);
@@ -10,7 +11,8 @@ export default function Home() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isBadgeModalOpen, setIsBadgeModalOpen] = useState(false);
   const navigate = useNavigate(); 
-
+  const { showMsg } = useToast();
+  
   // 编辑表单的数据状态
   const [editForm, setEditForm] = useState({
     nickname: '',
@@ -87,7 +89,7 @@ export default function Home() {
       setIsEditModalOpen(false);
       window.location.reload(); 
     } catch (error) {
-      alert(error.message);
+      showMsg(error.message, 'error');
     } finally {
       setIsUpdating(false);
     }
@@ -136,7 +138,6 @@ export default function Home() {
   const winRate = parseFloat(userInfo.stats.win_rate);
   const winNumOfTime = parseInt(userInfo.win_num_of_game);
   const sumNumOfTime = parseInt(userInfo.stats.total_games);
-  console.log(winNumOfTime,sumNumOfTime)
   const donutOption = {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'item' },

@@ -1,8 +1,9 @@
 import {useNavigate } from 'react-router-dom';
-
+import { useToast } from '../context/ToastContext';
 export default function GameStore() {
   const navigate = useNavigate();
-
+  const { showMsg } = useToast();
+  
   // 模拟《最强大脑》的游戏仓库数据
   const gameStore = [
     {
